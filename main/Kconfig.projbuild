@@ -1,0 +1,7 @@
+menu "Custom Config"
+    config SLEEP_TIME
+        string "Sleep time in hours"
+        default "6"
+        help
+            How often ESP should measure and send soil humidity. 6 is default.
+endmenu

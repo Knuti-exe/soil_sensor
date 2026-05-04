@@ -19,7 +19,7 @@ typedef struct {
     adc_channel_t adc_chan;
     int gpio_num;
     bool curve_fitting;
-    bool line_fitting;
+    bool line_fitting; // #TODO check if it exists for ex32c3
 } adc_info_t;
 
 void adc_init(adc_info_t *_channels, int _chan_num);

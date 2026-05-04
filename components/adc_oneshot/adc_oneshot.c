@@ -7,9 +7,7 @@ static adc_info_t *adc_channels = NULL;
 
 static int chan_num = 0;
 const static char *adc_tag = "adc";
-static bool curv_fit_sup = false;
 
-static void adc_calibration_deinit(adc_cali_handle_t handle);
 // static bool adc_calibration_init(adc_unit_t unit, adc_channel_t channel, adc_atten_t atten, adc_cali_handle_t *out_handle);
 static void adc_calibration_init(adc_info_t *adc_channel);
 
@@ -17,13 +15,19 @@ void adc_init(adc_info_t *_channels, int _chan_num)
 {
     esp_err_t ret;
 
-    memcpy(adc_channels, _channels, _chan_num);
+
+    adc_channels = pvPortMalloc(_chan_num * sizeof(adc_info_t));
+    
+    memset(adc_channels, 0, _chan_num * sizeof(adc_info_t));
+    memcpy(adc_channels, _channels, _chan_num * sizeof(adc_info_t));
 
     chan_num = _chan_num;
 
+    adc_unit_t t;
+
     for (int i=0; i<chan_num; i++)
     {
-        if (adc_channels[i].adc_chan) ESP_ERROR_CHECK(adc_oneshot_io_to_channel(adc_channels[i].gpio_num, NULL, adc_channels[i].adc_chan));
+        if (adc_channels[i].adc_chan) ESP_ERROR_CHECK(adc_oneshot_io_to_channel(adc_channels[i].gpio_num, &t, &(adc_channels[i].adc_chan)));
     }
 
     // cali_chan_handle = pvPortMalloc(chan_num * sizeof(cali_chan_handle));
@@ -40,14 +44,12 @@ void adc_init(adc_info_t *_channels, int _chan_num)
 
     for (int i=0; i<chan_num; i++)
     {
-        if (adc_channels[i].adc_chan) 
-        {
-            ret = adc_oneshot_config_channel(adc_handle, adc_channels[i].adc_chan, &config);
-            if (ret == ESP_OK) ESP_LOGI(adc_tag, "Adc channel_%d configured succeed!", i);
-            else ESP_LOGE(adc_tag, "Adc channel_%d configuration failed!", i);
-            
-            adc_calibration_init(&adc_channels[i]);
-        }
+        ret = adc_oneshot_config_channel(adc_handle, adc_channels[i].adc_chan, &config);
+        if (ret == ESP_OK) ESP_LOGI(adc_tag, "Adc channel_%d configured succeed!", i);
+        else ESP_LOGE(adc_tag, "Adc channel_%d configuration failed!", i);
+        
+        adc_calibration_init(&adc_channels[i]);
+        
     }
 }
 
@@ -153,7 +155,7 @@ static void adc_calibration_init(adc_info_t *adc_channel)
         .atten = ADC_ATTEN,
         .bitwidth = ADC_BITWIDTH_DEFAULT,
     };
-    ret = adc_cali_create_scheme_curve_fitting(&cali_config, adc_channel->cali_chan_handle);
+    ret = adc_cali_create_scheme_curve_fitting(&cali_config, &(adc_channel->cali_chan_handle));
     if (ret == ESP_OK) {
         adc_channel->curve_fitting = true;
     }
