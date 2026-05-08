@@ -34,6 +34,5 @@ Roadmap / TODO
 - [x] Deep Sleep optimization
 - [x] Battery status monitoring
 - [ ] Support for multiple moisture sensors
-- [ ] OTA updates (via HTTPS server)
 - [ ] Bug fixes and stability improvements
 - [ ] Code refactoring (optional)
