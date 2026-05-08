@@ -8,10 +8,6 @@
 #include "esp_adc/adc_cali.h"
 #include "esp_adc/adc_cali_scheme.h"
 
-//              #TODO zmienic kanał
-#define ADC_CHAN1 ADC_CHANNEL_4
-#define ADC_CHAN2 ADC_CHANNEL_5
-// dla es32c3, kanał adc == gpio_num (np. channel_3 -> gpio_num_3). kanał 5 to ADC2 -> konflikty z radiem
 #define ADC_ATTEN ADC_ATTEN_DB_12
 
 typedef struct {
@@ -19,7 +15,7 @@ typedef struct {
     adc_channel_t adc_chan;
     int gpio_num;
     bool curve_fitting;
-    bool line_fitting; // #TODO check if it exists for ex32c3
+    int power_gpio;
 } adc_info_t;
 
 void adc_init(adc_info_t *_channels, int _chan_num);

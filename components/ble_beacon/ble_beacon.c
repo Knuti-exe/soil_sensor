@@ -4,7 +4,7 @@
 int rc;
 const char *tag = "BLE_ADV";
 static uint8_t ble_own_addr;
-static uint8_t bat, hum;
+static uint8_t bat, hum1, hum2;
 
 static int ble_gap_callback(struct ble_gap_event *event, void *arg);
 
@@ -16,12 +16,12 @@ static void ble_advertise()
     memset(&fields, 0, sizeof(fields));
     memset(&adv_params, 0, sizeof(adv_params));
 
-    char *name = "Plant_sensor";
+    char *name = "Plants";           // 6 + 2 (header) bytes
     fields.name = (uint8_t *)name;
     fields.name_len = strlen(name);
     fields.name_is_complete = 1;
 
-    uint8_t data[4] = {0xff, 0xff, bat, hum};
+    uint8_t data[5] = {0xff, 0xff, bat, hum1, hum2};
 
     fields.mfg_data = data;
     fields.mfg_data_len = sizeof(data);
@@ -37,14 +37,13 @@ static void ble_advertise()
 
     rc = ble_gap_adv_start(
                             ble_own_addr,       // addr
-                                NULL,               // direct advertising
+                            NULL,               // direct advertising
                             800,                // advertise for 800 ms
                             &adv_params,        // low level params
                             ble_gap_callback,   // event callback
                             NULL                // event loop args
     );
 
-    printf("Error code: %d\n", rc);
     assert(rc == 0);
 }
 
@@ -61,10 +60,11 @@ static void ble_host_task(void *param) {
     nimble_port_freertos_deinit();
 }
 
-void ble_init(uint8_t _hum, uint8_t _bat)
+void ble_init(uint8_t _hum, uint8_t _hum2, uint8_t _bat)
 {
-    hum = _hum;
+    hum1 = _hum;
     bat = _bat;
+    hum2 = _hum2;
 
     ESP_ERROR_CHECK(nimble_port_init());
 
@@ -81,4 +81,10 @@ static int ble_gap_callback(struct ble_gap_event *event, void *arg)
         xSemaphoreGive(bleSemaphore);
     }
     return 0;
+}
+
+void ble_deinit()
+{
+    nimble_port_stop();  
+    nimble_port_deinit();
 }
