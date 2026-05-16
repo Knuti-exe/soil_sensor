@@ -9,5 +9,5 @@
 
 extern SemaphoreHandle_t bleSemaphore;
 
-void ble_init(uint8_t _hum, uint8_t _hum2, uint8_t _bat);
+void ble_init(uint8_t _hum, uint8_t _hum2, uint8_t _bat, uint8_t _boot_count);
 void ble_deinit();

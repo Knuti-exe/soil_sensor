@@ -5,6 +5,7 @@ int rc;
 const char *tag = "BLE_ADV";
 static uint8_t ble_own_addr;
 static uint8_t bat, hum1, hum2;
+static uint8_t boot_count;
 
 static int ble_gap_callback(struct ble_gap_event *event, void *arg);
 
@@ -21,7 +22,7 @@ static void ble_advertise()
     fields.name_len = strlen(name);
     fields.name_is_complete = 1;
 
-    uint8_t data[5] = {0xff, 0xff, bat, hum1, hum2};
+    uint8_t data[6] = {0xff, 0xff, bat, hum1, hum2, boot_count};
 
     fields.mfg_data = data;
     fields.mfg_data_len = sizeof(data);
@@ -60,11 +61,12 @@ static void ble_host_task(void *param) {
     nimble_port_freertos_deinit();
 }
 
-void ble_init(uint8_t _hum, uint8_t _hum2, uint8_t _bat)
+void ble_init(uint8_t _hum, uint8_t _hum2, uint8_t _bat, uint8_t _boot_count)
 {
     hum1 = _hum;
     bat = _bat;
     hum2 = _hum2;
+    boot_count = _boot_count;
 
     ESP_ERROR_CHECK(nimble_port_init());
 

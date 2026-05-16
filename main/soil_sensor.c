@@ -5,6 +5,7 @@
 #include <esp_system.h>
 #include <esp_sleep.h>
 #include <driver/gpio.h>
+#include "esp_mac.h"
 
 
 #ifdef EXAMPLE_SLEEP_TIME
@@ -26,14 +27,14 @@ typedef struct {
 }battery_point_t;
 
 static const char *tag = "main";
-RTC_DATA_ATTR static int boot_count = 0;      // #TODO send via BLE
+RTC_DATA_ATTR static uint8_t boot_count = 0;
 SemaphoreHandle_t bleSemaphore = NULL;
 
 // Soil humidity const
 const int min = 950;    // min -> fully sumberged
-const int max = 2770;    // max -> floating in the air    
+const int max = 2670;    // max -> floating in the air        #TODO have to reduce range
 const int min2 = 850;
-const int max2 = 2770;
+const int max2 = 2670;
 // Li-ion battery const
 const battery_point_t battery_table[] = {
     {4350, 100},
@@ -56,8 +57,8 @@ const battery_point_t battery_table[] = {
 
 void app_main(void) 
 {
-    gpio_config_t gpio_conf = {
-        .pin_bit_mask = (1ULL<<POWER_SENSOR) | (1ULL<<GPIO_LED) | (1ULL<<POWER_SENSOR2),
+    gpio_config_t gpio_conf = { // #TODO
+        .pin_bit_mask = (1ULL<<POWER_SENSOR) | (1ULL<<GPIO_LED) | (1ULL<<POWER_SENSOR2) | (1ULL<<10),
         .mode = GPIO_MODE_OUTPUT,
         .intr_type = GPIO_INTR_DISABLE,
         .pull_down_en = GPIO_PULLDOWN_DISABLE,
@@ -75,16 +76,32 @@ void app_main(void)
 
     // from ble_beacon.h
     bleSemaphore = xSemaphoreCreateBinary();
+    xQueueReset(bleSemaphore);
+
+    uint8_t mac[6];
+    esp_read_mac(mac, ESP_MAC_BT);
+
+    printf("MAC: %02X:%02X:%02X:%02X:%02X:%02X\n",
+           mac[0], mac[1], mac[2],
+           mac[3], mac[4], mac[5]);
+
+    esp_reset_reason_t reason = esp_reset_reason();
+    
+    gpio_set_level(10, 0);
+    if (reason == ESP_RST_BROWNOUT)
+    {
+        gpio_set_level(10, 1);
+        vTaskDelay(pdMS_TO_TICKS(5000));
+        gpio_set_level(10, 0);
+    }
+
 
     int chan_num = 3;
     adc_info_t *channels = pvPortMalloc(chan_num * sizeof(adc_info_t));
 
     channels[0].gpio_num = GPIO_BAT;
-    channels[0].power_gpio = -1;
     channels[1].gpio_num = GPIO_SENSOR;
-    channels[1].power_gpio = -1;  // #TODO      adc_oneshot.c might open declared power_pin
     channels[2].gpio_num = GPIO_SENSOR2;
-    channels[2].power_gpio = -1;  // #TODO
 
     adc_init(channels, chan_num);
     free(channels);
@@ -108,7 +125,7 @@ void app_main(void)
     bat = (uint8_t) battery_table[i].soc;
 
 
-    printf("Battery level:\n\tRaw val: %.1f \nCalc: %d %%\n\n", read_val(GPIO_BAT), battery_table[i].soc);
+    printf("Battery level:\n\tRaw val: %.1f \nCalc: %u %%\n\n", read_val(GPIO_BAT), bat);
     
     //                          PLANT 1 - HUMIDITY READINGS
 
@@ -127,7 +144,7 @@ void app_main(void)
     }
     else hum = 0xff;  // means error
 
-    printf("Humidity:\n\tRaw val: %.1f \nCalc: %d %%\n\n", read_val(GPIO_SENSOR), hum == 0xff ? 255 : raw);
+    printf("Humidity:\n\tRaw val: %.1f \nCalc: %u %%\n\n", read_val(GPIO_SENSOR), hum);
 
     //                          PLANT 2 - HUMIDITY READINGS
 
@@ -139,19 +156,18 @@ void app_main(void)
 
     gpio_set_level(POWER_SENSOR2, 0);
 
-    if (raw >= min && raw <= max)
+    if (raw >= min2 && raw <= max2)
     {
         val = 100 - (raw - min2) * 100 / (max2 - min2);
         hum2 = (uint8_t) val;
     }
         else hum2 = 0xff;  // means error
 
-    printf("Humidity:\n\tRaw val: %.1f \nCalc: %d %%\n\n", read_val(GPIO_SENSOR2), hum2 == 0xff ? 255 : raw);
+    printf("Humidity:\n\tRaw val: %.1f \nCalc: %u %%\n\n", read_val(GPIO_SENSOR2), hum2);
     
-    vTaskDelay(pdMS_TO_TICKS(3000));
     //                              ADVERTISING
 
-    ble_init(hum, hum2, bat);
+    ble_init(hum, hum2, bat, boot_count);
 
     //                              SLEEP MODE
 
@@ -160,6 +176,8 @@ void app_main(void)
     ble_deinit();                   // useless, but let it stay    
 
     gpio_set_level(GPIO_LED, 0);
+
+    boot_count ++;
 
     ESP_LOGI(tag, "Entering deep sleep for %d hours", SLEEP_TIME);
     
