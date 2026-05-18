@@ -35,30 +35,12 @@ const int min = 950;    // min -> fully sumberged
 const int max = 2670;    // max -> floating in the air        #TODO have to reduce range
 const int min2 = 850;
 const int max2 = 2670;
-// Li-ion battery const
-const battery_point_t battery_table[] = {
-    {4350, 100},
-    {4300, 95},
-    {4250, 90},
-    {4200, 80},
-    {4100, 70},
-    {4000, 60},
-    {3920, 50},
-    {3850, 40},
-    {3800, 30},
-    {3750, 20},
-    {3700, 15},
-    {3650, 10},
-    {3550, 5},
-    {3400, 0}
-};
 
-#define BATTERY_TABLE_SIZE (sizeof(battery_table) / sizeof(battery_table[0]))
 
 void app_main(void) 
 {
-    gpio_config_t gpio_conf = { // #TODO
-        .pin_bit_mask = (1ULL<<POWER_SENSOR) | (1ULL<<GPIO_LED) | (1ULL<<POWER_SENSOR2) | (1ULL<<10),
+    gpio_config_t gpio_conf = {
+        .pin_bit_mask = (1ULL<<POWER_SENSOR) | (1ULL<<GPIO_LED) | (1ULL<<POWER_SENSOR2),
         .mode = GPIO_MODE_OUTPUT,
         .intr_type = GPIO_INTR_DISABLE,
         .pull_down_en = GPIO_PULLDOWN_DISABLE,
@@ -106,26 +88,30 @@ void app_main(void)
     adc_init(channels, chan_num);
     free(channels);
 
-    //                          BATTERY STATE READING
+    //                          BROWNOUT RESET CHECKING
 
-    int raw, val;
-    uint8_t hum, bat, hum2;
+    uint8_t brownout = 0x00;
 
+    if (esp_reset_reason() == ESP_RST_BROWNOUT && boot_count > 0)
+    {
+        brownout = 0x01;
+    }
+
+    //                          BATTERY READING
+
+    float raw, val;
+    uint8_t hum, hum2, bat1, bat2;
 
     raw = read_val(GPIO_BAT);
 
-    val = raw * 2; // bat voltage in mV (*2 => voltage divider)
+    val = raw * 2.00511; // bat voltage in mV (*2 => voltage divider)
 
-    int i=0;
-    while (i < BATTERY_TABLE_SIZE - 1)
-    {
-        if (battery_table[i++].voltage < val) break;
-    }
-
-    bat = (uint8_t) battery_table[i].soc;
+    uint16_t bat_mv = (uint16_t)val;
+    bat1 = (bat_mv >> 8) & 0xFF;
+    bat2 = bat_mv & 0xFF;
 
 
-    printf("Battery level:\n\tRaw val: %.1f \nCalc: %u %%\n\n", read_val(GPIO_BAT), bat);
+    printf("Battery level:\n\tRaw val: %.1f \nCalc: %u *255 + %u %%\n\n", val, bat1, bat2);
     
     //                          PLANT 1 - HUMIDITY READINGS
 
@@ -167,7 +153,7 @@ void app_main(void)
     
     //                              ADVERTISING
 
-    ble_init(hum, hum2, bat, boot_count);
+    ble_init(hum, hum2, bat1, bat2, brownout, boot_count);
 
     //                              SLEEP MODE
 

@@ -16,10 +16,10 @@ With BLE, the device wakes up, measures data, and broadcasts it in under 1 secon
 
 Hardware Components
 - ESP32-C3 SuperMini
-- Li-ion Battery (2000mAh)
+- Li-ion Battery (~700mAh in my case)
 - TP4056 charging module
 - Capacitive Soil Moisture Sensor v2.0
-- 2 x 10kΩ Resistors (Voltage divider)
+- 2 x 100kΩ Resistors (Voltage divider)
 
 > [!WARNING]
 > I am using a simple voltage divider to scale the battery voltage down, preventing the ESP32 ADC from being exposed to voltages above its limit (4.2V from a fully charged battery).
@@ -33,6 +33,6 @@ Roadmap / TODO
 - [x] ADC Implementation (Moisture & Battery)
 - [x] Deep Sleep optimization
 - [x] Battery status monitoring
-- [ ] Support for multiple moisture sensors
-- [ ] Bug fixes and stability improvements
+- [x] Support for multiple moisture sensors
+- [x] Bug fixes and stability improvements
 - [ ] Code refactoring (optional)
