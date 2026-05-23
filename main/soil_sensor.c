@@ -27,14 +27,14 @@ typedef struct {
 }battery_point_t;
 
 static const char *tag = "main";
-RTC_DATA_ATTR static uint8_t boot_count = 0;
+RTC_DATA_ATTR static uint8_t boot_count = 99;   // dont mind this
 SemaphoreHandle_t bleSemaphore = NULL;
 
 // Soil humidity const
 const int min = 950;    // min -> fully sumberged
-const int max = 2670;    // max -> floating in the air        #TODO have to reduce range
+const int max = 2308;    // max -> floating in the air        #TODO have to reduce range
 const int min2 = 850;
-const int max2 = 2670;
+const int max2 = 2342;
 
 
 void app_main(void) 
@@ -123,12 +123,11 @@ void app_main(void)
 
     gpio_set_level(POWER_SENSOR, 0);
 
-    if (raw >= min && raw <= max)
-    {
-        val = 100 - (raw - min) * 100 / (max - min);
-        hum = (uint8_t) val;
-    }
-    else hum = 0xff;  // means error
+    if (raw < min) raw = min;
+    if (raw > max) raw = max;
+
+    val = 100 - (raw - min) * 100 / (max - min);
+    hum = (uint8_t) val;
 
     printf("Humidity:\n\tRaw val: %.1f \nCalc: %u %%\n\n", read_val(GPIO_SENSOR), hum);
 
@@ -142,12 +141,12 @@ void app_main(void)
 
     gpio_set_level(POWER_SENSOR2, 0);
 
-    if (raw >= min2 && raw <= max2)
-    {
-        val = 100 - (raw - min2) * 100 / (max2 - min2);
-        hum2 = (uint8_t) val;
-    }
-        else hum2 = 0xff;  // means error
+    if (raw < min2) raw = min2;
+    if (raw > max2) raw = max2;
+    
+    val = 100 - (raw - min2) * 100 / (max2 - min2);
+    hum2 = (uint8_t) val;
+    
 
     printf("Humidity:\n\tRaw val: %.1f \nCalc: %u %%\n\n", read_val(GPIO_SENSOR2), hum2);
     
