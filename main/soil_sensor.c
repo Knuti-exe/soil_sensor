@@ -27,14 +27,14 @@ typedef struct {
 }battery_point_t;
 
 static const char *tag = "main";
-RTC_DATA_ATTR static uint8_t boot_count = 99;   // dont mind this
+RTC_DATA_ATTR static uint8_t boot_count = 98;   // dont mind this
 SemaphoreHandle_t bleSemaphore = NULL;
 
 // Soil humidity const
 const int min = 950;    // min -> fully sumberged
-const int max = 2308;    // max -> floating in the air        #TODO have to reduce range
+const int max = 1765;    // max -> floating in the air        #TODO have to reduce range
 const int min2 = 850;
-const int max2 = 2342;
+const int max2 = 1745;
 
 
 void app_main(void) 
@@ -105,6 +105,8 @@ void app_main(void)
     raw = read_val(GPIO_BAT);
 
     val = raw * 2.00511; // bat voltage in mV (*2 => voltage divider)
+
+    if (val < 3300) brownout = 0x01;
 
     uint16_t bat_mv = (uint16_t)val;
     bat1 = (bat_mv >> 8) & 0xFF;
