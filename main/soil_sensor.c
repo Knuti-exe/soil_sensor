@@ -27,7 +27,7 @@ typedef struct {
 }battery_point_t;
 
 static const char *tag = "main";
-RTC_DATA_ATTR static uint8_t boot_count = 98;   // dont mind this
+RTC_DATA_ATTR static uint8_t boot_count = 1;   // dont mind this
 SemaphoreHandle_t bleSemaphore = NULL;
 
 // Soil humidity const
@@ -87,6 +87,7 @@ void app_main(void)
 
     adc_init(channels, chan_num);
     free(channels);
+
 
     //                          BROWNOUT RESET CHECKING
 
@@ -167,6 +168,6 @@ void app_main(void)
     boot_count ++;
 
     ESP_LOGI(tag, "Entering deep sleep for %d hours", SLEEP_TIME);
-    
+
     esp_deep_sleep(1000000LL * 3600 * SLEEP_TIME);
 }

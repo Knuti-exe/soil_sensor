@@ -32,13 +32,13 @@ static void ble_advertise()
 
     adv_params.conn_mode = BLE_GAP_CONN_MODE_NON;
     adv_params.disc_mode = BLE_GAP_DISC_MODE_GEN;
-    adv_params.itvl_min = 160;
-    adv_params.itvl_max = 240;
+    adv_params.itvl_min = 150;
+    adv_params.itvl_max = 180;
 
     rc = ble_gap_adv_start(
                             ble_own_addr,       // addr
                             NULL,               // direct advertising
-                            800,                // advertise for 800 ms
+                            2000,                // advertise for 800 ms
                             &adv_params,        // low level params
                             ble_gap_callback,   // event callback
                             NULL                // event loop args
